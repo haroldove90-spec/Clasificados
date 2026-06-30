@@ -53,15 +53,14 @@ export default function App() {
       return;
     }
 
-    // Step 1 -> 2
-    const timer1 = setTimeout(() => {
-      setEmergencyStep(2);
-    }, 2000);
+    if (emergencyStep < 2) {
+      return;
+    }
 
-    // Step 2 -> 3
+    // Step 2 -> 3 (Transmitting signals...)
     const timer2 = setTimeout(() => {
       setEmergencyStep(3);
-    }, 4500);
+    }, 2500);
 
     // Step 3 -> 4 (Assign a tech)
     const timer3 = setTimeout(() => {
@@ -77,14 +76,13 @@ export default function App() {
         status: 'arriving',
         avatar: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=120&auto=format&fit=crop&q=80'
       });
-    }, 7500);
+    }, 5500);
 
     return () => {
-      clearTimeout(timer1);
       clearTimeout(timer2);
       clearTimeout(timer3);
     };
-  }, [view, emergencyCategory]);
+  }, [view, emergencyStep, emergencyCategory]);
 
   // --- STATE FOR DISPONIBLE (TECHNICIAN) MODE ---
   const [techSpecialty, setTechSpecialty] = useState<'plumbing' | 'electricity' | 'locksmith' | 'gas'>('electricity');
@@ -297,172 +295,238 @@ export default function App() {
                   </button>
                   <div>
                     <h2 className="font-extrabold text-sm tracking-wide uppercase text-red-600">
-                      AUXILIO URGENTE
+                      {emergencyStep === 1 ? "BUSCANDO EN TIEMPO REAL" : "ALERTA ENVIADA"}
                     </h2>
-                    <p className="text-[11px] text-gray-400">Configuración de transmisión</p>
-                  </div>
-                </div>
-
-                {/* Option selector if step is 1 */}
-                {emergencyStep === 1 && (
-                  <div className="mt-4 space-y-3">
-                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider text-center">
-                      ¿Cuál es tu emergencia técnica?
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        onClick={() => setEmergencyCategory('plumbing')}
-                        className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all cursor-pointer ${
-                          emergencyCategory === 'plumbing' 
-                            ? 'bg-blue-50 border-blue-400 text-blue-700 font-bold' 
-                            : 'bg-white border-gray-200 text-gray-500'
-                        }`}
-                      >
-                        <Droplet className="w-5 h-5 text-blue-500" />
-                        <span className="text-xs">Plomería</span>
-                      </button>
-                      <button
-                        onClick={() => setEmergencyCategory('electricity')}
-                        className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all cursor-pointer ${
-                          emergencyCategory === 'electricity' 
-                            ? 'bg-amber-50 border-amber-400 text-amber-700 font-bold' 
-                            : 'bg-white border-gray-200 text-gray-500'
-                        }`}
-                      >
-                        <Zap className="w-5 h-5 text-amber-500" />
-                        <span className="text-xs">Electricidad</span>
-                      </button>
-                      <button
-                        onClick={() => setEmergencyCategory('locksmith')}
-                        className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all cursor-pointer ${
-                          emergencyCategory === 'locksmith' 
-                            ? 'bg-purple-50 border-purple-400 text-purple-700 font-bold' 
-                            : 'bg-white border-gray-200 text-gray-500'
-                        }`}
-                      >
-                        <Key className="w-5 h-5 text-purple-500" />
-                        <span className="text-xs">Cerrajería</span>
-                      </button>
-                      <button
-                        onClick={() => setEmergencyCategory('gas')}
-                        className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all cursor-pointer ${
-                          emergencyCategory === 'gas' 
-                            ? 'bg-red-50 border-red-400 text-red-700 font-bold' 
-                            : 'bg-white border-gray-200 text-gray-500'
-                        }`}
-                      >
-                        <Flame className="w-5 h-5 text-red-500" />
-                        <span className="text-xs">Fuga de Gas</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Radar visualization */}
-                <div className="flex-1 flex flex-col items-center justify-center my-4 relative">
-                  {/* Circular radar line boundaries */}
-                  <div className="absolute w-44 h-44 border border-gray-200 rounded-full flex items-center justify-center">
-                    <div className="w-32 h-32 border border-gray-150 rounded-full flex items-center justify-center">
-                      <div className="w-20 h-20 border border-gray-100 rounded-full"></div>
-                    </div>
-                  </div>
-
-                  {/* Dynamic pulse signals */}
-                  <div className="absolute w-36 h-36 bg-red-500/10 rounded-full animate-ping"></div>
-                  <div className="absolute w-24 h-24 bg-red-500/15 rounded-full animate-ping [animation-delay:1s]"></div>
-
-                  {/* Center core beacon */}
-                  <div className="relative z-10 w-12 h-12 bg-red-500 rounded-full flex items-center justify-center shadow-lg shadow-red-200 border border-white">
-                    <Radio className="w-5 h-5 text-white animate-pulse" />
-                  </div>
-
-                  {/* Simulated 5km indicator text */}
-                  <div className="mt-6 text-center px-2">
-                    <div className="inline-flex items-center gap-1 text-xs text-red-600 font-bold tracking-wider">
-                      <Compass className="w-3.5 h-3.5 animate-spin" />
-                      TRANSMITIENDO ALERTA (5KM)
-                    </div>
-                    <p className="text-[11px] text-gray-500 mt-1 h-8">
-                      {emergencyStep === 1 && "Enlazando coordenadas de auxilio..."}
-                      {emergencyStep === 2 && "Buscando técnicos más cercanos..."}
-                      {emergencyStep === 3 && "Alerta recibida en terminales. Esperando confirmación..."}
-                      {emergencyStep >= 4 && "¡Técnico en camino!"}
+                    <p className="text-[10px] text-gray-400">
+                      {emergencyStep === 1 ? "Análisis de cobertura IA" : "Localizando soporte de inmediato"}
                     </p>
                   </div>
                 </div>
 
-                {/* Response log stack */}
-                <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 mb-3">
-                  <h4 className="text-[9px] font-bold tracking-wider text-gray-400 uppercase mb-2">
-                    Bitácora de Conexión
-                  </h4>
-                  <div className="space-y-1.5 text-xs">
-                    <div className="flex items-center justify-between text-gray-600">
-                      <span>Rango de difusión:</span>
-                      <span className="font-bold text-gray-800">5.000 metros (OK)</span>
+                {/* STEP 1: ULTRA-MINIMALIST PRE-CONFIRMATION INTERFACE */}
+                {emergencyStep === 1 ? (
+                  <div className="flex-1 flex flex-col justify-between py-2">
+                    {/* Category Selector integrated beautifully to allow interactive pricing changes */}
+                    <div className="mt-2">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider text-center mb-2">
+                        SELECCIONA TIPO DE EMERGENCIA
+                      </p>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {[
+                          { id: 'plumbing', icon: Droplet, label: 'Plomería', color: 'blue' },
+                          { id: 'electricity', icon: Zap, label: 'Electricidad', color: 'amber' },
+                          { id: 'locksmith', icon: Key, label: 'Cerrajería', color: 'purple' },
+                          { id: 'gas', icon: Flame, label: 'Gas LP', color: 'red' }
+                        ].map((cat) => {
+                          const Icon = cat.icon;
+                          const isSelected = emergencyCategory === cat.id;
+                          return (
+                            <button
+                              key={cat.id}
+                              onClick={() => setEmergencyCategory(cat.id as any)}
+                              className={`p-2 rounded-xl border flex flex-col items-center justify-center transition-all cursor-pointer ${
+                                isSelected 
+                                  ? 'bg-black text-white border-black shadow-md' 
+                                  : 'bg-gray-50 border-gray-150 text-gray-500 hover:bg-gray-100'
+                              }`}
+                            >
+                              <Icon className={`w-4 h-4 mb-1 ${
+                                isSelected 
+                                  ? 'text-white' 
+                                  : cat.color === 'blue' ? 'text-blue-500' : cat.color === 'amber' ? 'text-amber-500' : cat.color === 'purple' ? 'text-purple-500' : 'text-red-500'
+                              }`} />
+                              <span className="text-[9px] font-bold tracking-tight">{cat.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
-                    {emergencyStep >= 2 && (
-                      <motion.div 
-                        initial={{ opacity: 0 }} 
-                        animate={{ opacity: 1 }} 
-                        className="flex items-center gap-1.5 text-red-600 font-semibold"
-                      >
-                        <span className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
-                        Buscando especialistas en {emergencyCategory === 'plumbing' ? 'plomería' : emergencyCategory === 'electricity' ? 'electricidad' : emergencyCategory === 'locksmith' ? 'cerrajería' : 'fugas'}...
-                      </motion.div>
-                    )}
-
-                    {emergencyStep >= 3 && !assignedTech && (
-                      <motion.div 
-                        initial={{ opacity: 0 }} 
-                        animate={{ opacity: 1 }} 
-                        className="flex items-center gap-1.5 text-amber-600 font-semibold"
-                      >
-                        <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
-                        Dispositivos notificados. Esperando respuesta.
-                      </motion.div>
-                    )}
-
-                    {assignedTech && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 5 }} 
-                        animate={{ opacity: 1, y: 0 }} 
-                        className="bg-white border border-gray-150 p-2.5 rounded-lg mt-1 flex items-center justify-between gap-3 shadow-xs"
-                      >
-                        <div className="flex items-center gap-2">
-                          <img 
-                            src={assignedTech.avatar} 
-                            alt={assignedTech.name} 
-                            className="w-9 h-9 rounded-full object-cover border border-gray-200" 
-                            referrerPolicy="no-referrer"
-                          />
-                          <div>
-                            <p className="font-bold text-gray-800 text-xs">{assignedTech.name}</p>
-                            <p className="text-[10px] text-emerald-600 font-semibold">{assignedTech.specialty}</p>
-                            <p className="text-[9px] text-gray-400 flex items-center gap-0.5">
-                              <Star className="w-2.5 h-2.5 fill-amber-400 stroke-amber-400" /> 4.9 • {assignedTech.distance}
-                            </p>
-                          </div>
+                    {/* Indicator visual de radar o escaneo */}
+                    <div className="flex-1 flex flex-col items-center justify-center relative my-3">
+                      {/* Radar lines */}
+                      <div className="absolute w-36 h-36 border border-gray-200 rounded-full flex items-center justify-center">
+                        <div className="w-24 h-24 border border-gray-150 rounded-full flex items-center justify-center">
+                          <div className="w-14 h-14 border border-gray-100 rounded-full"></div>
                         </div>
-                        <div className="text-right">
-                          <span className="bg-emerald-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">
-                            En Camino
-                          </span>
-                          <p className="text-[9px] text-gray-400 mt-1">Llega: 8 min</p>
+                      </div>
+
+                      {/* Scanning concentric rings */}
+                      <div className="absolute w-32 h-32 bg-orange-500/5 rounded-full animate-ping [animation-duration:3s]"></div>
+                      <div className="absolute w-20 h-20 bg-orange-500/10 rounded-full animate-pulse"></div>
+
+                      {/* Rotating scanning line vector */}
+                      <div className="absolute w-32 h-32 rounded-full border border-dashed border-orange-300/30 animate-spin [animation-duration:8s] flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full absolute top-0"></div>
+                      </div>
+
+                      {/* Center Beacon */}
+                      <div className="relative z-10 w-11 h-11 bg-gradient-to-tr from-orange-500 to-amber-500 rounded-full flex items-center justify-center shadow-md shadow-orange-100 border-2 border-white">
+                        <Radio className="w-4.5 h-4.5 text-white animate-pulse" />
+                      </div>
+
+                      {/* Aviso de Técnicos Encontrados */}
+                      <div className="mt-4 z-10">
+                        <div className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-extrabold tracking-wide uppercase animate-pulse">
+                          <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                          3 Técnicos encontrados a menos de 3km
                         </div>
-                      </motion.div>
-                    )}
+                      </div>
+                    </div>
+
+                    {/* Tarjeta limpia con precio estimado por la IA */}
+                    <div className="bg-gradient-to-b from-gray-50 to-white border border-gray-150 rounded-2xl p-4 shadow-sm relative overflow-hidden mb-2">
+                      <div className="absolute top-0 right-0 p-2 opacity-10">
+                        <Sparkles className="w-12 h-12 text-orange-500" />
+                      </div>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-orange-500" />
+                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                          PRECIO ESTIMADO POR IA
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-black text-gray-900 tracking-tight">
+                          {emergencyCategory === 'plumbing' ? '$450 - $600' :
+                           emergencyCategory === 'electricity' ? '$550 - $750' :
+                           emergencyCategory === 'locksmith' ? '$400 - $550' : '$650 - $900'}
+                        </span>
+                        <span className="text-xs font-bold text-gray-500">MXN</span>
+                      </div>
+                      
+                      <p className="text-[10px] text-gray-500 mt-1.5 leading-snug">
+                        Tarifa predictiva optimizada para el servicio de <span className="font-semibold text-gray-800">
+                          {emergencyCategory === 'plumbing' ? 'Plomería' :
+                           emergencyCategory === 'electricity' ? 'Electricidad' :
+                           emergencyCategory === 'locksmith' ? 'Cerrajería' : 'Fuga de Gas'}
+                        </span>. Incluye diagnóstico, herramientas básicas y garantía de arribo rápido.
+                      </p>
+                    </div>
+
+                    {/* Botón naranja grande CONFIRMAR Y LANZAR ALERTA */}
+                    <div className="mt-2">
+                      <button
+                        id="btn-confirm-alert"
+                        onClick={() => setEmergencyStep(2)}
+                        className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white py-3.5 px-4 rounded-xl shadow-lg shadow-orange-100 flex flex-col items-center justify-center transition-all cursor-pointer active:scale-[0.98] border border-orange-400"
+                      >
+                        <span className="text-[9px] font-extrabold uppercase tracking-widest opacity-90">COBERTURA CONFIRMADA</span>
+                        <span className="text-xs font-black tracking-wide uppercase flex items-center gap-1.5 mt-0.5">
+                          🟧 CONFIRMAR Y LANZAR ALERTA
+                        </span>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  /* STEP 2+, 3, 4: REAL TIME MATCHING RADAR & TECHNICIAN PROGRESS */
+                  <div className="flex-1 flex flex-col justify-between py-2">
+                    {/* Radar visualization */}
+                    <div className="flex-1 flex flex-col items-center justify-center my-2 relative">
+                      {/* Circular radar line boundaries */}
+                      <div className="absolute w-44 h-44 border border-gray-200 rounded-full flex items-center justify-center">
+                        <div className="w-32 h-32 border border-gray-150 rounded-full flex items-center justify-center">
+                          <div className="w-20 h-20 border border-gray-100 rounded-full"></div>
+                        </div>
+                      </div>
+
+                      {/* Dynamic pulse signals */}
+                      <div className="absolute w-36 h-36 bg-red-500/10 rounded-full animate-ping"></div>
+                      <div className="absolute w-24 h-24 bg-red-500/15 rounded-full animate-ping [animation-delay:1s]"></div>
+
+                      {/* Center core beacon */}
+                      <div className="relative z-10 w-12 h-12 bg-red-500 rounded-full flex items-center justify-center shadow-lg shadow-red-200 border border-white">
+                        <Radio className="w-5 h-5 text-white animate-pulse" />
+                      </div>
+
+                      {/* Simulated 5km indicator text */}
+                      <div className="mt-6 text-center px-2">
+                        <div className="inline-flex items-center gap-1 text-xs text-red-600 font-bold tracking-wider">
+                          <Compass className="w-3.5 h-3.5 animate-spin" />
+                          TRANSMITIENDO ALERTA (5KM)
+                        </div>
+                        <p className="text-[11px] text-gray-500 mt-1 h-8">
+                          {emergencyStep === 2 && "Buscando técnicos más cercanos..."}
+                          {emergencyStep === 3 && "Alerta recibida en terminales. Esperando confirmación..."}
+                          {emergencyStep >= 4 && "¡Técnico en camino!"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Response log stack */}
+                    <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 mb-3">
+                      <h4 className="text-[9px] font-bold tracking-wider text-gray-400 uppercase mb-2">
+                        Bitácora de Conexión
+                      </h4>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex items-center justify-between text-gray-600">
+                          <span>Rango de difusión:</span>
+                          <span className="font-bold text-gray-800">5.000 metros (OK)</span>
+                        </div>
+
+                        {emergencyStep >= 2 && (
+                          <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            className="flex items-center gap-1.5 text-red-600 font-semibold"
+                          >
+                            <span className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
+                            Buscando especialistas en {emergencyCategory === 'plumbing' ? 'plomería' : emergencyCategory === 'electricity' ? 'electricidad' : emergencyCategory === 'locksmith' ? 'cerrajería' : 'fugas'}...
+                          </motion.div>
+                        )}
+
+                        {emergencyStep >= 3 && !assignedTech && (
+                          <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            className="flex items-center gap-1.5 text-amber-600 font-semibold"
+                          >
+                            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
+                            Dispositivos notificados. Esperando respuesta.
+                          </motion.div>
+                        )}
+
+                        {assignedTech && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 5 }} 
+                            animate={{ opacity: 1, y: 0 }} 
+                            className="bg-white border border-gray-150 p-2.5 rounded-lg mt-1 flex items-center justify-between gap-3 shadow-xs"
+                          >
+                            <div className="flex items-center gap-2">
+                              <img 
+                                src={assignedTech.avatar} 
+                                alt={assignedTech.name} 
+                                className="w-9 h-9 rounded-full object-cover border border-gray-200" 
+                                referrerPolicy="no-referrer"
+                              />
+                              <div>
+                                <p className="font-bold text-gray-800 text-xs">{assignedTech.name}</p>
+                                <p className="text-[10px] text-emerald-600 font-semibold">{assignedTech.specialty}</p>
+                                <p className="text-[9px] text-gray-400 flex items-center gap-0.5">
+                                  <Star className="w-2.5 h-2.5 fill-amber-400 stroke-amber-400" /> 4.9 • {assignedTech.distance}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span className="bg-emerald-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">
+                                En Camino
+                              </span>
+                              <p className="text-[9px] text-gray-400 mt-1">Llega: 8 min</p>
+                            </div>
+                          </motion.div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Cancel Button */}
                 <button
                   id="btn-cancel-emergency"
                   onClick={() => setView('home')}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-250 rounded-xl py-3 font-bold text-xs tracking-wider transition-all cursor-pointer text-center"
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-250 rounded-xl py-3 font-bold text-xs tracking-wider transition-all cursor-pointer text-center animate-pulse"
                 >
-                  CANCELAR ALERTA URGENTE
+                  {emergencyStep === 1 ? "VOLVER AL MENÚ PRINCIPAL" : "CANCELAR ALERTA URGENTE"}
                 </button>
               </motion.div>
             )}
