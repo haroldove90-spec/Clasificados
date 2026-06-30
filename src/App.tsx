@@ -17,7 +17,9 @@ import {
   Map as MapIcon,
   ShieldAlert,
   Sliders,
-  Sparkles
+  Sparkles,
+  Lock,
+  MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AppView, Technician, ActiveAlert } from './types';
@@ -95,6 +97,21 @@ export default function App() {
   const [incomingAlert, setIncomingAlert] = useState<ActiveAlert | null>(null);
   const [incomingTimer, setIncomingTimer] = useState(9);
 
+  // New states for interactive client & technician flows
+  const [showTechMap, setShowTechMap] = useState(true);
+  const [showClientChat, setShowClientChat] = useState(false);
+  const [techPosition, setTechPosition] = useState({ x: 20, y: 15 });
+  const [clientChatMessages, setClientChatMessages] = useState<{sender: 'client' | 'tech', text: string}[]>([
+    { sender: 'tech', text: 'Hola, buenas tardes. Soy Carlos Mendoza, su técnico asignado.' },
+    { sender: 'tech', text: 'Ya tengo sus datos y voy en camino. Llego en aproximadamente 12 minutos.' }
+  ]);
+  const [clientChatInput, setClientChatInput] = useState('');
+  
+  const [otpCodeEntered, setOtpCodeEntered] = useState('');
+  const [otpIsCorrect, setOtpIsCorrect] = useState(false);
+  const [otpError, setOtpError] = useState(false);
+  const [hasArrived, setHasArrived] = useState(false);
+
   useEffect(() => {
     if (view !== 'available') {
       setIncomingAlert(null);
@@ -143,6 +160,36 @@ export default function App() {
 
     return () => clearInterval(interval);
   }, [incomingAlert, incomingTimer]);
+
+  // Simulate Carlos Mendoza moving on the map towards the client
+  useEffect(() => {
+    if (view !== 'emergency' || emergencyStep < 2) {
+      setTechPosition({ x: 20, y: 15 });
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setTechPosition(prev => {
+        const targetX = 75;
+        const targetY = 70;
+        const dx = targetX - prev.x;
+        const dy = targetY - prev.y;
+
+        if (Math.abs(dx) < 1 && Math.abs(dy) < 1) {
+          clearInterval(interval);
+          return { x: targetX, y: targetY };
+        }
+
+        // Move smoothly towards target
+        return {
+          x: prev.x + dx * 0.05,
+          y: prev.y + dy * 0.05
+        };
+      });
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [view, emergencyStep]);
   
   // Simulated available alerts based on category
   const [availableAlerts, setAvailableAlerts] = useState<ActiveAlert[]>([
@@ -203,6 +250,20 @@ export default function App() {
       setTechnicianChat(prev => [
         ...prev, 
         { sender: 'client', text: 'Perfecto, te espero aquí. Hay lugar para estacionar.' }
+      ]);
+    }, 1500);
+  };
+
+  const sendClientChatMessage = () => {
+    if (!clientChatInput.trim()) return;
+    setClientChatMessages(prev => [...prev, { sender: 'client', text: clientChatInput }]);
+    setClientChatInput('');
+
+    // Auto response from Carlos Mendoza
+    setTimeout(() => {
+      setClientChatMessages(prev => [
+        ...prev,
+        { sender: 'tech', text: 'Excelente, acabo de pasar la Av. Principal. Ya casi llego.' }
       ]);
     }, 1500);
   };
@@ -482,103 +543,231 @@ export default function App() {
                     </div>
                   </div>
                 ) : (
-                  /* STEP 2+, 3, 4: REAL TIME MATCHING RADAR & TECHNICIAN PROGRESS */
+                  /* ULTRA-CLEAN VISUAL "TECNICO EN CAMINO" SCREEN */
                   <div className="flex-1 flex flex-col justify-between py-2">
-                    {/* Radar visualization */}
-                    <div className="flex-1 flex flex-col items-center justify-center my-2 relative">
-                      {/* Circular radar line boundaries */}
-                      <div className="absolute w-44 h-44 border border-gray-200 rounded-full flex items-center justify-center">
-                        <div className="w-32 h-32 border border-gray-150 rounded-full flex items-center justify-center">
-                          <div className="w-20 h-20 border border-gray-100 rounded-full"></div>
+                    <div className="space-y-3">
+                      
+                      {/* Sub-Header style banner */}
+                      <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 text-[10px] font-black uppercase text-center py-1.5 px-3 rounded-lg tracking-widest animate-pulse">
+                        ✨ ¡SERVICIO CONFIRMADO! ✨
+                      </div>
+
+                      {/* Assigned Tech Card */}
+                      <div className="bg-white border border-gray-150 p-3 rounded-2xl flex items-center justify-between gap-3 shadow-xs">
+                        <div className="flex items-center gap-2.5">
+                          <div className="relative">
+                            <img 
+                              src="https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=120&auto=format&fit=crop&q=80"
+                              alt="Carlos Mendoza" 
+                              className="w-11 h-11 rounded-full object-cover border border-gray-200" 
+                              referrerPolicy="no-referrer"
+                            />
+                            <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+                          </div>
+                          <div>
+                            <p className="font-black text-gray-900 text-sm">Carlos Mendoza</p>
+                            <p className="text-[10px] text-blue-600 font-bold uppercase">Soporte Técnico de Emergencia</p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="flex items-center text-[10px] text-amber-500 font-bold">
+                                <Star className="w-3 h-3 fill-amber-400 stroke-amber-400 mr-0.5" /> 4.9
+                              </span>
+                              <span className="text-[10px] text-gray-400 font-medium">(120 servicios)</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="bg-emerald-500 text-white text-[8px] px-2 py-0.5 rounded font-black uppercase tracking-wider block text-center">
+                            EN CAMINO
+                          </span>
+                          <span className="text-gray-900 font-black text-xs block mt-1 leading-none">⏱️ 12 min</span>
+                          <span className="text-[8px] text-gray-400 block mt-0.5 uppercase tracking-tight">Tiempo estimado</span>
                         </div>
                       </div>
 
-                      {/* Dynamic pulse signals */}
-                      <div className="absolute w-36 h-36 bg-red-500/10 rounded-full animate-ping"></div>
-                      <div className="absolute w-24 h-24 bg-red-500/15 rounded-full animate-ping [animation-delay:1s]"></div>
+                      {/* 📍 VER MAPA EN TIEMPO REAL section */}
+                      <div className="border border-gray-150 rounded-2xl overflow-hidden bg-slate-50">
+                        <button
+                          onClick={() => setShowTechMap(!showTechMap)}
+                          className="w-full bg-gray-100 hover:bg-gray-150 border-b border-gray-150 py-2.5 px-3 flex items-center justify-between transition-colors text-left"
+                        >
+                          <span className="text-[10px] font-black text-gray-700 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                            <MapIcon className="w-3.5 h-3.5 text-blue-600" />
+                            📍 VER MAPA EN TIEMPO REAL
+                          </span>
+                          <span className="text-[8px] bg-blue-100 text-blue-700 font-bold px-1.5 py-0.5 rounded uppercase font-mono">
+                            {showTechMap ? 'Ocultar' : 'Ver'}
+                          </span>
+                        </button>
 
-                      {/* Center core beacon */}
-                      <div className="relative z-10 w-12 h-12 bg-red-500 rounded-full flex items-center justify-center shadow-lg shadow-red-200 border border-white">
-                        <Radio className="w-5 h-5 text-white animate-pulse" />
+                        {showTechMap && (
+                          <div className="h-32 relative bg-slate-100 overflow-hidden border-b border-gray-100">
+                            {/* Grid styling background */}
+                            <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:15px_15px] opacity-60"></div>
+                            
+                            {/* Path vector line */}
+                            <svg className="absolute inset-0 w-full h-full">
+                              <path 
+                                d="M 50 40 L 120 60 L 180 130 L 250 180" 
+                                fill="none" 
+                                stroke="#cbd5e1" 
+                                strokeWidth="4" 
+                                strokeDasharray="4 4"
+                              />
+                              <path 
+                                d="M 50 40 L 120 60 L 180 130 L 250 180" 
+                                fill="none" 
+                                stroke="#3b82f6" 
+                                strokeWidth="4" 
+                                strokeLinecap="round"
+                                className="opacity-80"
+                              />
+                            </svg>
+
+                            {/* Client house position (Laura Martínez) */}
+                            <div className="absolute bottom-[20%] right-[25%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10 font-sans">
+                              <span className="absolute w-6 h-6 bg-blue-500/20 rounded-full animate-ping"></span>
+                              <div className="w-4 h-4 rounded-full bg-blue-600 border border-white flex items-center justify-center shadow-xs">
+                                <span className="text-[7px] text-white font-black">H</span>
+                              </div>
+                              <span className="text-[6px] bg-blue-800 text-white px-1 rounded mt-0.5 font-bold uppercase tracking-tight">Tu Casa</span>
+                            </div>
+
+                            {/* Moving technician icon (Carlos Mendoza) */}
+                            <div 
+                              className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center transition-all duration-1000 ease-out z-20 font-sans"
+                              style={{ 
+                                left: `${techPosition.x}%`, 
+                                top: `${techPosition.y}%` 
+                              }}
+                            >
+                              <span className="absolute w-8 h-8 bg-emerald-500/30 rounded-full animate-ping"></span>
+                              <div className="w-6 h-6 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center shadow-md">
+                                <User className="w-3.5 h-3.5 text-white" />
+                              </div>
+                              <span className="text-[7px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded mt-0.5 shadow-xs whitespace-nowrap">
+                                🛠️ Carlos Mendoza
+                              </span>
+                            </div>
+
+                            {/* GPS floating stats indicator */}
+                            <div className="absolute bottom-1.5 left-1.5 bg-white/90 border border-gray-200 px-1.5 py-0.5 rounded text-[8px] text-gray-500 font-bold flex items-center gap-1 shadow-xs font-mono">
+                              <Navigation className="w-2.5 h-2.5 text-blue-500 animate-spin" />
+                              Velocidad: 45 km/h • GPS Activo
+                            </div>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Simulated 5km indicator text */}
-                      <div className="mt-6 text-center px-2">
-                        <div className="inline-flex items-center gap-1 text-xs text-red-600 font-bold tracking-wider">
-                          <Compass className="w-3.5 h-3.5 animate-spin" />
-                          TRANSMITIENDO ALERTA (5KM)
+                      {/* OTP Security Code block */}
+                      <div className="bg-amber-50/70 border border-dashed border-amber-300 rounded-2xl p-3 text-center relative overflow-hidden font-sans">
+                        <span className="text-[8px] font-black text-amber-700 uppercase tracking-widest block mb-1">
+                          🔐 TU CÓDIGO DE SEGURIDAD OTP
+                        </span>
+                        <div className="flex justify-center gap-2 mt-1.5">
+                          {['5', '8', '2', '4'].map((char, index) => (
+                            <span key={index} className="w-8 h-9 bg-white border border-amber-200 rounded-lg flex items-center justify-center text-lg font-black text-amber-800 shadow-xs font-mono">
+                              {char}
+                            </span>
+                          ))}
                         </div>
-                        <p className="text-[11px] text-gray-500 mt-1 h-8">
-                          {emergencyStep === 2 && "Buscando técnicos más cercanos..."}
-                          {emergencyStep === 3 && "Alerta recibida en terminales. Esperando confirmación..."}
-                          {emergencyStep >= 4 && "¡Técnico en camino!"}
-                        </p>
+                        <span className="text-[9px] text-amber-600/90 block mt-2 font-medium">
+                          Díselo al técnico cuando llegue a tu casa para validar el inicio seguro del servicio.
+                        </span>
                       </div>
+
+                      {/* Mini Chat Drawer Toggle if client Chat is active */}
+                      {showClientChat && (
+                        <motion.div 
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="bg-gray-50 border border-gray-150 rounded-2xl p-3 flex flex-col justify-between space-y-2 h-44 font-sans"
+                        >
+                          <div className="flex justify-between items-center border-b border-gray-200 pb-1.5">
+                            <span className="text-[8px] font-black text-gray-400 uppercase tracking-wider">
+                              Chat Interno con Técnico
+                            </span>
+                            <button 
+                              onClick={() => setShowClientChat(false)}
+                              className="text-[8px] font-bold text-gray-400 hover:text-gray-600 uppercase"
+                            >
+                              Ocultar
+                            </button>
+                          </div>
+                          
+                          <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5 text-xs">
+                            {clientChatMessages.map((msg, idx) => (
+                              <div 
+                                key={idx} 
+                                className={`flex ${msg.sender === 'client' ? 'justify-end' : 'justify-start'}`}
+                              >
+                                <div 
+                                  className={`max-w-[85%] rounded-lg px-2.5 py-1 text-[10px] leading-tight ${
+                                    msg.sender === 'client'
+                                      ? 'bg-blue-600 text-white rounded-tr-none'
+                                      : 'bg-white border border-gray-200 text-gray-700 rounded-tl-none'
+                                  }`}
+                                >
+                                  {msg.text}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex gap-1 border-t border-gray-250 pt-1.5">
+                            <input 
+                              type="text" 
+                              placeholder="Escribe mensaje..."
+                              value={clientChatInput}
+                              onChange={(e) => setClientChatInput(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && sendClientChatMessage()}
+                              className="flex-1 bg-white border border-gray-200 rounded-md px-2 py-1 text-[10px] text-gray-700 focus:outline-none"
+                            />
+                            <button
+                              onClick={sendClientChatMessage}
+                              className="p-1 bg-blue-600 hover:bg-blue-500 rounded-md text-white transition-colors flex items-center justify-center cursor-pointer"
+                            >
+                              <Send className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {/* Interactive Suggestion question box */}
+                      <div className="bg-blue-50/50 border border-blue-200 rounded-xl p-2 text-center mt-1">
+                        <span className="text-[9px] text-blue-700 font-bold block leading-relaxed">
+                          💡 ¿Qué pasa cuando el técnico llega a la puerta de la casa?
+                        </span>
+                        <span className="text-[8px] text-blue-500 block mt-0.5">
+                          Prueba simulando la perspectiva de técnico ingresando el código OTP en la sección de técnico.
+                        </span>
+                      </div>
+
                     </div>
 
-                    {/* Response log stack */}
-                    <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 mb-3">
-                      <h4 className="text-[9px] font-bold tracking-wider text-gray-400 uppercase mb-2">
-                        Bitácora de Conexión
-                      </h4>
-                      <div className="space-y-1.5 text-xs">
-                        <div className="flex items-center justify-between text-gray-600">
-                          <span>Rango de difusión:</span>
-                          <span className="font-bold text-gray-800">5.000 metros (OK)</span>
-                        </div>
+                    {/* Action buttons stack */}
+                    <div className="grid grid-cols-2 gap-2 mt-3">
+                      <button
+                        onClick={() => setShowClientChat(!showClientChat)}
+                        className={`py-3 px-2 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 border cursor-pointer ${
+                          showClientChat 
+                            ? 'bg-emerald-600 border-emerald-500 text-white shadow-md' 
+                            : 'bg-white hover:bg-gray-50 border-emerald-500 text-emerald-600 hover:text-emerald-700'
+                        }`}
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>🟩 CHAT INTERNO</span>
+                      </button>
 
-                        {emergencyStep >= 2 && (
-                          <motion.div 
-                            initial={{ opacity: 0 }} 
-                            animate={{ opacity: 1 }} 
-                            className="flex items-center gap-1.5 text-red-600 font-semibold"
-                          >
-                            <span className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
-                            Buscando especialistas en {emergencyCategory === 'plumbing' ? 'plomería' : emergencyCategory === 'electricity' ? 'electricidad' : emergencyCategory === 'locksmith' ? 'cerrajería' : 'fugas'}...
-                          </motion.div>
-                        )}
-
-                        {emergencyStep >= 3 && !assignedTech && (
-                          <motion.div 
-                            initial={{ opacity: 0 }} 
-                            animate={{ opacity: 1 }} 
-                            className="flex items-center gap-1.5 text-amber-600 font-semibold"
-                          >
-                            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
-                            Dispositivos notificados. Esperando respuesta.
-                          </motion.div>
-                        )}
-
-                        {assignedTech && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: 5 }} 
-                            animate={{ opacity: 1, y: 0 }} 
-                            className="bg-white border border-gray-150 p-2.5 rounded-lg mt-1 flex items-center justify-between gap-3 shadow-xs"
-                          >
-                            <div className="flex items-center gap-2">
-                              <img 
-                                src={assignedTech.avatar} 
-                                alt={assignedTech.name} 
-                                className="w-9 h-9 rounded-full object-cover border border-gray-200" 
-                                referrerPolicy="no-referrer"
-                              />
-                              <div>
-                                <p className="font-bold text-gray-800 text-xs">{assignedTech.name}</p>
-                                <p className="text-[10px] text-emerald-600 font-semibold">{assignedTech.specialty}</p>
-                                <p className="text-[9px] text-gray-400 flex items-center gap-0.5">
-                                  <Star className="w-2.5 h-2.5 fill-amber-400 stroke-amber-400" /> 4.9 • {assignedTech.distance}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <span className="bg-emerald-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">
-                                En Camino
-                              </span>
-                              <p className="text-[9px] text-gray-400 mt-1">Llega: 8 min</p>
-                            </div>
-                          </motion.div>
-                        )}
-                      </div>
+                      <button
+                        onClick={() => {
+                          setEmergencyStep(1);
+                          setView('home');
+                        }}
+                        className="py-3 px-2 bg-white hover:bg-red-50 border border-red-500 text-red-600 hover:text-red-700 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                        <span>🟥 CANCELAR</span>
+                      </button>
                     </div>
                   </div>
                 )}
@@ -779,19 +968,17 @@ export default function App() {
                           <span className="font-mono text-xs font-bold text-emerald-600">${activeJob.payout} MXN</span>
                         </div>
                         <p className="text-[10px] text-gray-500 mt-1">{activeJob.description}</p>
-                        
-                        <div className="mt-2 pt-2 border-t border-gray-150 flex items-center justify-between text-[9px] text-gray-400">
-                          <span>📍 {activeJob.distance}</span>
-                          <span className="bg-white border border-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
-                            {activeJob.category.toUpperCase()}
-                          </span>
-                        </div>
                       </div>
 
                       {/* Progress State indicators */}
-                      <div className="bg-gray-50 border border-gray-100 rounded-lg p-2 flex items-center justify-between">
+                      <div className="bg-gray-50 border border-gray-100 rounded-lg p-1.5 flex items-center justify-between">
                         <button
-                          onClick={() => setJobProgress('accepted')}
+                          onClick={() => {
+                            setJobProgress('accepted');
+                            setOtpIsCorrect(false);
+                            setOtpCodeEntered('');
+                            setOtpError('');
+                          }}
                           className={`flex-1 py-1 rounded-md text-[9px] font-bold text-center border transition-all cursor-pointer ${
                             jobProgress === 'accepted'
                               ? 'bg-emerald-50 border-emerald-300 text-emerald-700 font-bold'
@@ -804,7 +991,7 @@ export default function App() {
                         <button
                           onClick={() => setJobProgress('arrived')}
                           className={`flex-1 py-1 rounded-md text-[9px] font-bold text-center border transition-all cursor-pointer ${
-                            jobProgress === 'arrived'
+                            jobProgress === 'arrived' || otpIsCorrect
                               ? 'bg-emerald-50 border-emerald-300 text-emerald-700 font-bold'
                               : 'bg-transparent border-transparent text-gray-400'
                           }`}
@@ -813,64 +1000,286 @@ export default function App() {
                         </button>
                       </div>
 
-                      {/* Interactive Simulated Client Chat */}
-                      <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 h-36 flex flex-col justify-between">
-                        <span className="text-[8px] font-bold text-gray-400 uppercase mb-1 block border-b border-gray-150 pb-1 text-center">
-                          Contacto Directo con Solicitante
-                        </span>
-                        
-                        {/* Messages Area */}
-                        <div className="flex-1 overflow-y-auto space-y-2 pr-0.5 text-xs">
-                          {technicianChat.map((msg, idx) => (
-                            <div 
-                              key={idx} 
-                              className={`flex ${msg.sender === 'tech' ? 'justify-end' : 'justify-start'}`}
-                            >
-                              <div 
-                                className={`max-w-[85%] rounded-lg px-2.5 py-1.5 text-[10px] leading-tight ${
-                                  msg.sender === 'tech'
-                                    ? 'bg-emerald-600 text-white rounded-tr-none'
-                                    : 'bg-white border border-gray-150 text-gray-700 rounded-tl-none'
-                                }`}
-                              >
-                                {msg.text}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                      {/* Conditional Flow based on progress */}
+                      {jobProgress === 'accepted' && !otpIsCorrect ? (
+                        <>
+                          {/* Navigation GPS Map simulation */}
+                          <div className="border border-gray-150 rounded-2xl overflow-hidden bg-slate-50 relative h-32">
+                            <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:15px_15px] opacity-60"></div>
+                            
+                            {/* Decorative map line */}
+                            <svg className="absolute inset-0 w-full h-full">
+                              <path 
+                                d="M 50 40 L 120 60 L 180 130 L 250 180" 
+                                fill="none" 
+                                stroke="#10b981" 
+                                strokeWidth="4" 
+                                strokeLinecap="round"
+                              />
+                            </svg>
 
-                        {/* Message Input bar */}
-                        <div className="flex gap-1.5 border-t border-gray-150 pt-2 mt-1.5">
-                          <input 
-                            type="text" 
-                            placeholder="Mensaje..."
-                            value={chatInput}
-                            onChange={(e) => setChatInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()}
-                            className="flex-1 bg-white border border-gray-200 rounded-md px-2 py-1 text-[10px] text-gray-700 focus:outline-none"
-                          />
+                            <div className="absolute bottom-[20%] right-[25%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
+                              <div className="w-3 h-3 rounded-full bg-blue-600 border border-white"></div>
+                              <span className="text-[6px] bg-blue-800 text-white px-1 rounded mt-0.5 font-bold">CLIENTE</span>
+                            </div>
+
+                            <div className="absolute top-[30%] left-[30%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-20">
+                              <span className="absolute w-6 h-6 bg-emerald-500/30 rounded-full animate-ping"></span>
+                              <div className="w-4 h-4 rounded-full bg-emerald-500 border border-white flex items-center justify-center shadow-xs">
+                                <span className="text-[8px] text-white">🛵</span>
+                              </div>
+                              <span className="text-[6px] bg-emerald-600 text-white font-bold px-1 rounded mt-0.5">TÚ</span>
+                            </div>
+
+                            <div className="absolute bottom-1.5 left-1.5 bg-white/90 border border-gray-200 px-1.5 py-0.5 rounded text-[8px] text-gray-500 font-bold flex items-center gap-1 shadow-xs">
+                              <Navigation className="w-2.5 h-2.5 text-blue-500 animate-spin" />
+                              Navegación GPS: Ruta de arribo rápido
+                            </div>
+                          </div>
+
+                          {/* Interactive Simulated Client Chat */}
+                          <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 h-32 flex flex-col justify-between">
+                            <span className="text-[8px] font-bold text-gray-400 uppercase mb-1 block border-b border-gray-150 pb-1 text-center">
+                              Contacto Directo con Solicitante
+                            </span>
+                            
+                            {/* Messages Area */}
+                            <div className="flex-1 overflow-y-auto space-y-2 pr-0.5 text-xs">
+                              {technicianChat.map((msg, idx) => (
+                                <div 
+                                  key={idx} 
+                                  className={`flex ${msg.sender === 'tech' ? 'justify-end' : 'justify-start'}`}
+                                >
+                                  <div 
+                                    className={`max-w-[85%] rounded-lg px-2 py-1 text-[10px] leading-tight ${
+                                      msg.sender === 'tech'
+                                        ? 'bg-emerald-600 text-white rounded-tr-none'
+                                        : 'bg-white border border-gray-150 text-gray-700 rounded-tl-none'
+                                    }`}
+                                  >
+                                    {msg.text}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Message Input bar */}
+                            <div className="flex gap-1.5 border-t border-gray-150 pt-1.5 mt-1">
+                              <input 
+                                type="text" 
+                                placeholder="Escribe mensaje..."
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()}
+                                className="flex-1 bg-white border border-gray-200 rounded-md px-2 py-1 text-[10px] text-gray-700 focus:outline-none"
+                              />
+                              <button
+                                onClick={sendChatMessage}
+                                className="p-1 bg-emerald-600 hover:bg-emerald-500 rounded-md text-white transition-colors flex items-center justify-center cursor-pointer"
+                              >
+                                <Send className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Quick Step Trigger Button */}
                           <button
-                            onClick={sendChatMessage}
-                            className="p-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-md text-white transition-colors flex items-center justify-center cursor-pointer"
+                            onClick={() => setJobProgress('arrived')}
+                            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wide transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                           >
-                            <Send className="w-3 h-3" />
+                            <span>📍 REGISTRAR LLEGADA EN EL SITIO</span>
                           </button>
+                        </>
+                      ) : jobProgress === 'arrived' && !otpIsCorrect ? (
+                        /* OTP SECURE VERIFICATION SCREEN */
+                        <div className="bg-white border border-gray-150 rounded-2xl p-3 text-center space-y-2">
+                          <div className="flex justify-center mb-1">
+                            <div className="w-10 h-10 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center">
+                              <Lock className="w-5 h-5 text-amber-500 animate-pulse" />
+                            </div>
+                          </div>
+                          
+                          <span className="text-[10px] font-black text-amber-800 uppercase tracking-widest block">
+                            🔒 VERIFICACIÓN DE IDENTIDAD OTP
+                          </span>
+                          <p className="text-[10px] text-gray-500 max-w-[210px] mx-auto leading-tight">
+                            Solicita el código de 4 dígitos al cliente (Laura Martínez) para validar tu llegada.
+                          </p>
+
+                          {/* OTP Code Display Slot */}
+                          <div className="flex justify-center gap-3 py-2">
+                            {[0, 1, 2, 3].map((idx) => {
+                              const digit = otpCodeEntered[idx];
+                              return (
+                                <span 
+                                  key={idx} 
+                                  className={`w-9 h-11 border-2 rounded-xl flex items-center justify-center text-xl font-black font-mono shadow-xs transition-colors ${
+                                    digit 
+                                      ? 'bg-amber-50 border-amber-500 text-amber-800' 
+                                      : 'bg-gray-50 border-gray-200 text-gray-300'
+                                  }`}
+                                >
+                                  {digit || '•'}
+                                </span>
+                              );
+                            })}
+                          </div>
+
+                          {/* Error or Hint messages */}
+                          {otpError ? (
+                            <p className="text-[10px] font-bold text-red-600 animate-bounce">{otpError}</p>
+                          ) : (
+                            <p className="text-[9px] text-gray-400">Pista: El código del cliente es <span className="font-bold text-gray-600">5824</span></p>
+                          )}
+
+                          {/* Simulated Digital Keypad */}
+                          <div className="grid grid-cols-3 gap-1.5 max-w-[180px] mx-auto pt-1">
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                              <button
+                                key={num}
+                                onClick={() => {
+                                  if (otpCodeEntered.length < 4) {
+                                    setOtpCodeEntered(prev => prev + num);
+                                    setOtpError('');
+                                  }
+                                }}
+                                className="bg-gray-50 hover:bg-gray-100 text-gray-800 font-bold py-1.5 rounded-lg text-xs cursor-pointer border border-gray-150 active:scale-95"
+                              >
+                                {num}
+                              </button>
+                            ))}
+                            <button
+                              onClick={() => {
+                                setOtpCodeEntered('');
+                                setOtpError('');
+                              }}
+                              className="bg-red-50 hover:bg-red-100 text-red-600 font-bold py-1.5 rounded-lg text-[9px] uppercase cursor-pointer border border-red-150 active:scale-95"
+                            >
+                              BORRAR
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (otpCodeEntered.length < 4) {
+                                  setOtpCodeEntered(prev => prev + '0');
+                                  setOtpError('');
+                                }
+                              }}
+                              className="bg-gray-50 hover:bg-gray-100 text-gray-800 font-bold py-1.5 rounded-lg text-xs cursor-pointer border border-gray-150 active:scale-95"
+                            >
+                              0
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (otpCodeEntered === '5824') {
+                                  setOtpIsCorrect(true);
+                                  setOtpError('');
+                                } else {
+                                  setOtpError('❌ CÓDIGO INCORRECTO. REINTENTE.');
+                                  setOtpCodeEntered('');
+                                }
+                              }}
+                              className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-1.5 rounded-lg text-[9px] uppercase cursor-pointer border border-emerald-400 active:scale-95 shadow-xs"
+                            >
+                              OK
+                            </button>
+                          </div>
+
+                          {/* Quick Bypass Button */}
+                          <div className="pt-1.5">
+                            <button
+                              onClick={() => {
+                                setOtpCodeEntered('5824');
+                                setOtpIsCorrect(true);
+                                setOtpError('');
+                              }}
+                              className="text-[9px] bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-3 py-1 rounded-full uppercase tracking-wide cursor-pointer transition-colors"
+                            >
+                              ⚡ Auto-completar Código (5824)
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        /* ORDEN DE TRABAJO EN CURSO - WORK ORDER WITH AI CHECKLIST */
+                        <div className="bg-white border border-gray-150 rounded-2xl p-4.5 space-y-3.5 shadow-xs">
+                          <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                            <div>
+                              <span className="text-[8px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                IDENTIDAD VERIFICADA
+                              </span>
+                              <h4 className="font-extrabold text-xs text-gray-800 mt-1">ORDEN DE TRABAJO ACTIVA</h4>
+                            </div>
+                            <span className="text-emerald-600 font-black text-sm">$450 MXN</span>
+                          </div>
+
+                          {/* Checklist Section */}
+                          <div className="space-y-2">
+                            <span className="text-[8px] font-extrabold text-gray-400 uppercase tracking-wider block">
+                              ⚙️ PROCEDIMIENTO RECOMENDADO POR IA:
+                            </span>
+
+                            <div className="space-y-1.5">
+                              {[
+                                'Cerrar la llave de paso de agua principal de la sección',
+                                'Drenar tubería residual excedente en el sistema',
+                                'Aplicar sellado de alta resistencia o soldadura plástica',
+                                'Probar presión y flujo constante sin goteo'
+                              ].map((item, index) => (
+                                <label 
+                                  key={index} 
+                                  className="flex items-start gap-2.5 p-2 bg-gray-50 border border-gray-100 hover:border-gray-200 rounded-xl cursor-pointer transition-colors"
+                                >
+                                  <input 
+                                    type="checkbox" 
+                                    defaultChecked={index < 2}
+                                    className="w-4 h-4 rounded text-emerald-500 border-gray-300 focus:ring-emerald-500 mt-0.5"
+                                  />
+                                  <span className="text-[10px] text-gray-600 font-medium leading-tight">
+                                    {item}
+                                  </span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="bg-emerald-50 border border-emerald-150 rounded-xl p-2.5 text-center">
+                            <span className="text-[9px] text-emerald-800 font-semibold block leading-relaxed">
+                              🛠️ ¡Trabajo listo para finalizar!
+                            </span>
+                            <span className="text-[8px] text-emerald-500 block mt-0.5">
+                              Haz clic abajo para reportar la solución y sumar tus ganancias de forma instantánea.
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Action button to Complete Work */}
                     <div className="mt-3 space-y-1.5">
+                      {otpIsCorrect ? (
+                        <button
+                          onClick={finishJob}
+                          className="w-full bg-[#10B981] hover:bg-[#059669] text-white font-extrabold rounded-xl py-3 text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-100 flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98] border border-emerald-500 animate-pulse"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                          🏁 FINALIZAR Y COBRAR CORRECTAMENTE
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="w-full bg-gray-100 text-gray-400 border border-gray-200 font-extrabold rounded-xl py-3 text-xs uppercase tracking-wider cursor-not-allowed flex items-center justify-center gap-1.5"
+                        >
+                          <Lock className="w-3.5 h-3.5" />
+                          ESPERANDO VALIDACIÓN OTP DEL CLIENTE
+                        </button>
+                      )}
+                      
                       <button
-                        onClick={finishJob}
-                        className="w-full bg-[#10B981] hover:bg-[#059669] text-white font-extrabold rounded-xl py-3 text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-100 flex items-center justify-center gap-1 cursor-pointer active:scale-[0.98]"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                        COMPLETAR Y COBRAR (${activeJob.payout})
-                      </button>
-                      <button
-                        onClick={() => setActiveJob(null)}
-                        className="w-full bg-white hover:bg-gray-50 text-gray-400 border border-gray-200 rounded-lg py-1.5 text-[9px] uppercase tracking-wider transition-all cursor-pointer"
+                        onClick={() => {
+                          setActiveJob(null);
+                          setOtpIsCorrect(false);
+                          setOtpCodeEntered('');
+                        }}
+                        className="w-full bg-white hover:bg-gray-50 text-gray-400 border border-gray-200 rounded-lg py-1.5 text-[9px] uppercase tracking-wider transition-all cursor-pointer text-center"
                       >
                         Cancelar Servicio
                       </button>
