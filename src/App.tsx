@@ -92,6 +92,57 @@ export default function App() {
   const [jobProgress, setJobProgress] = useState<'accepted' | 'arrived' | 'completed'>('accepted');
   const [technicianChat, setTechnicianChat] = useState<{sender: 'client' | 'tech', text: string}[]>([]);
   const [chatInput, setChatInput] = useState('');
+  const [incomingAlert, setIncomingAlert] = useState<ActiveAlert | null>(null);
+  const [incomingTimer, setIncomingTimer] = useState(9);
+
+  useEffect(() => {
+    if (view !== 'available') {
+      setIncomingAlert(null);
+      setIncomingTimer(9);
+      return;
+    }
+
+    let alertTimeout: NodeJS.Timeout;
+
+    if (!incomingAlert && !activeJob) {
+      alertTimeout = setTimeout(() => {
+        setIncomingAlert({
+          id: 'simulated-alert',
+          title: 'Fuga de agua detectada a 1.8 km (Colonia Centro)',
+          description: 'Se requiere asistencia inmediata para contener fuga en tubería de baño principal.',
+          distance: '1.8 km',
+          category: 'plumbing',
+          payout: 450,
+          timeAgo: 'Hace unos instantes'
+        });
+        setIncomingTimer(9);
+      }, 3000);
+    }
+
+    return () => {
+      clearTimeout(alertTimeout);
+    };
+  }, [view, incomingAlert, activeJob]);
+
+  // Countdown timer when incomingAlert is active
+  useEffect(() => {
+    if (!incomingAlert) return;
+    if (incomingTimer < 0) return;
+
+    if (incomingTimer === 0) {
+      const resetTimeout = setTimeout(() => {
+        setIncomingAlert(null);
+        setIncomingTimer(9);
+      }, 2000);
+      return () => clearTimeout(resetTimeout);
+    }
+
+    const interval = setInterval(() => {
+      setIncomingTimer(prev => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [incomingAlert, incomingTimer]);
   
   // Simulated available alerts based on category
   const [availableAlerts, setAvailableAlerts] = useState<ActiveAlert[]>([
@@ -163,9 +214,21 @@ export default function App() {
     setActiveJob(null);
   };
 
+  const handleNotifyTechs = () => {
+    if (isNotifying) return;
+    setIsNotifying(true);
+    setHasNotified(false);
+    setTimeout(() => {
+      setIsNotifying(false);
+      setHasNotified(true);
+    }, 1500);
+  };
+
   // --- STATE FOR MAP MODE ---
   const [mapFilter, setMapFilter] = useState<'all' | 'alerts' | 'techs' | 'hot'>('all');
   const [selectedMapPin, setSelectedMapPin] = useState<any>(null);
+  const [isNotifying, setIsNotifying] = useState(false);
+  const [hasNotified, setHasNotified] = useState(false);
 
   // Simulated Map Markers
   const mapMarkers = [
@@ -544,8 +607,8 @@ export default function App() {
                 <div className="flex justify-between items-center border-b border-gray-100 pb-2 mb-2">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                    <span className="text-xs font-bold tracking-wider uppercase text-emerald-600">
-                      Modo Disponible
+                    <span className="text-[10px] font-extrabold tracking-tight uppercase text-emerald-600">
+                      🟢 EN LÍNEA Y VISIBLE EN EL MAPA
                     </span>
                   </div>
                   <button 
@@ -554,25 +617,26 @@ export default function App() {
                       setActiveJob(null);
                       setView('home');
                     }}
-                    className="flex items-center gap-1 px-2.5 py-1 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-lg text-[10px] font-bold tracking-wide transition-colors cursor-pointer"
+                    className="flex items-center gap-1 px-2 py-0.5 bg-red-50 hover:bg-red-100 border border-red-100 text-red-600 rounded-lg text-[9px] font-bold tracking-wide transition-colors cursor-pointer animate-pulse"
                   >
-                    <Power className="w-3 h-3" />
-                    DESCONECTAR
+                    <Power className="w-2.5 h-2.5" />
+                    SALIR
                   </button>
                 </div>
 
                 {/* Specialty Picker & Stats if not in active job */}
                 {!activeJob ? (
                   <div className="flex-1 flex flex-col space-y-3 justify-between">
+                    
                     {/* Worker Profile Mini Card */}
-                    <div className="bg-gray-50 border border-gray-100 p-3 rounded-xl flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center">
-                          <User className="w-4.5 h-4.5 text-emerald-600" />
+                    <div className="bg-gray-50 border border-gray-100 p-2.5 rounded-xl flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                          <User className="w-4 h-4 text-emerald-600 animate-pulse" />
                         </div>
                         <div>
                           <p className="text-xs font-bold text-gray-800">Técnico Colaborador</p>
-                          <p className="text-[9px] text-gray-400">ID: #94218-FX</p>
+                          <p className="text-[9px] text-gray-400 font-mono">ID: #94218-FX</p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -585,90 +649,119 @@ export default function App() {
 
                     {/* Stats Grid */}
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-gray-50 border border-gray-100 rounded-lg p-2.5 text-center">
+                      <div className="bg-gray-50 border border-gray-100 rounded-lg p-2 text-center">
                         <span className="text-[8px] text-gray-400 uppercase tracking-wider block font-bold">Trabajos</span>
-                        <span className="text-base font-bold text-gray-800">{completedJobs}</span>
+                        <span className="text-sm font-bold text-gray-800">{completedJobs}</span>
                       </div>
-                      <div className="bg-gray-50 border border-gray-100 rounded-lg p-2.5 text-center">
+                      <div className="bg-gray-50 border border-gray-100 rounded-lg p-2 text-center">
                         <span className="text-[8px] text-gray-400 uppercase tracking-wider block font-bold">Ingresos</span>
-                        <span className="text-base font-bold text-emerald-600">${earnings} MXN</span>
+                        <span className="text-sm font-bold text-emerald-600">${earnings} MXN</span>
                       </div>
                     </div>
 
-                    {/* Specialty dropdown filter */}
-                    <div className="bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <Sliders className="w-3.5 h-3.5 text-gray-400" />
-                        <span className="text-xs text-gray-600 font-semibold">Especialidad</span>
+                    {/* Conditional Simulation Content: Waiting vs. Incoming Alert */}
+                    {!incomingAlert ? (
+                      <div className="flex-1 flex flex-col items-center justify-center py-4 relative">
+                        {/* Searching Pulsing Radar Visual */}
+                        <div className="absolute w-32 h-32 border border-emerald-100 rounded-full flex items-center justify-center">
+                          <div className="w-20 h-20 border border-emerald-50 rounded-full"></div>
+                        </div>
+                        <div className="absolute w-24 h-24 bg-emerald-500/5 rounded-full animate-ping"></div>
+                        <div className="relative z-10 w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-100">
+                          <Radio className="w-4.5 h-4.5 text-white animate-pulse" />
+                        </div>
+                        
+                        <div className="mt-4 text-center z-10">
+                          <p className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+                            Buscando emergencias...
+                          </p>
+                          <p className="text-[10px] text-gray-400 mt-1 max-w-[180px] mx-auto leading-tight">
+                            Esperando señal de auxilio a menos de 5km de tu ubicación...
+                          </p>
+                        </div>
                       </div>
-                      <select 
-                        value={techSpecialty} 
-                        onChange={(e) => setTechSpecialty(e.target.value as any)}
-                        className="bg-white border border-gray-200 text-gray-700 text-xs rounded-md px-2 py-0.5 focus:outline-none font-semibold cursor-pointer"
+                    ) : (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex-1 flex flex-col justify-between py-1"
                       >
-                        <option value="electricity">Electricidad ⚡</option>
-                        <option value="plumbing">Plomería 💧</option>
-                        <option value="locksmith">Cerrajería 🔑</option>
-                        <option value="gas">Fugas de Gas 🔥</option>
-                      </select>
-                    </div>
+                        {/* Heading indicating incoming alert */}
+                        <div className="text-center mb-2">
+                          <span className="bg-red-500 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-widest animate-pulse border border-white inline-block">
+                            🚨 AUXILIO ENTRANTE 🚨
+                          </span>
+                        </div>
 
-                    {/* Available Urgent Alarms Title */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                          Reportes Activos (5km)
-                        </span>
-                        <span className="bg-red-50 border border-red-100 text-red-600 text-[8px] px-1.5 py-0.5 rounded-full font-bold">
-                          SEÑALES
-                        </span>
-                      </div>
+                        {/* Tarjeta de Alerta Entrante */}
+                        <div className="bg-gradient-to-tr from-red-50/40 to-white border border-red-200 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                          <div className="absolute top-2 right-2 flex items-center gap-1 bg-red-100 border border-red-250 text-red-700 px-1.5 py-0.5 rounded text-[8px] font-bold">
+                            URGENTE
+                          </div>
+                          <span className="text-[9px] font-extrabold text-red-500 uppercase tracking-widest block mb-1">
+                            REPORTE DE PLOMERÍA
+                          </span>
+                          <h4 className="font-black text-xs text-gray-900 leading-tight">
+                            {incomingAlert.title}
+                          </h4>
+                          <p className="text-[10px] text-gray-500 mt-1.5 leading-snug">
+                            {incomingAlert.description}
+                          </p>
+                          <div className="mt-2.5 pt-2 border-t border-red-100 flex justify-between items-center text-[9px] text-gray-400 font-bold">
+                            <span>📍 1.8 km (Colonia Centro)</span>
+                            <span className="text-red-500">Arribo estimado: 6 min</span>
+                          </div>
+                        </div>
 
-                      {/* List of active alerts filtered or general */}
-                      <div className="space-y-2 max-h-[190px] overflow-y-auto pr-0.5">
-                        {availableAlerts.map((alert) => {
-                          const isMatch = alert.category === techSpecialty;
-                          return (
-                            <div 
-                              key={alert.id}
-                              className={`p-3 rounded-lg border transition-all ${
-                                isMatch 
-                                  ? 'bg-red-50/50 border-red-200 shadow-xs' 
-                                  : 'bg-white border-gray-100'
-                              }`}
-                            >
-                              <div className="flex justify-between items-start gap-2">
-                                <div className="flex items-center gap-1">
-                                  {alert.category === 'plumbing' && <Droplet className="w-3.5 h-3.5 text-blue-500" />}
-                                  {alert.category === 'electricity' && <Zap className="w-3.5 h-3.5 text-amber-500" />}
-                                  {alert.category === 'locksmith' && <Key className="w-3.5 h-3.5 text-purple-500" />}
-                                  {alert.category === 'gas' && <Flame className="w-3.5 h-3.5 text-red-500" />}
-                                  <h4 className="font-bold text-xs text-gray-800">{alert.title}</h4>
-                                </div>
-                                <span className="font-mono text-xs font-bold text-emerald-600">${alert.payout}</span>
-                              </div>
-                              <p className="text-[10px] text-gray-500 mt-1">{alert.description}</p>
-                              
-                              <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
-                                <span className="text-[9px] text-gray-400 font-medium">
-                                  📍 {alert.distance} • {alert.timeAgo}
-                                </span>
-                                <button
-                                  onClick={() => acceptJob(alert)}
-                                  className={`px-2 py-1 rounded-md text-[9px] font-bold tracking-wider uppercase transition-colors cursor-pointer ${
-                                    isMatch
-                                      ? 'bg-red-500 hover:bg-red-600 text-white shadow-xs shadow-red-100'
-                                      : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
-                                  }`}
-                                >
-                                  ATENDER
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
+                        {/* Tarjeta de Ganancia Estimada */}
+                        <div className="bg-emerald-50/40 border border-emerald-100 rounded-xl p-3 flex items-center justify-between">
+                          <div>
+                            <span className="text-[8px] font-bold text-emerald-600 block uppercase tracking-wider">
+                              GANANCIA ESTIMADA
+                            </span>
+                            <span className="text-base font-black text-emerald-700 tracking-tight block mt-0.5">
+                              $450 MXN aprox.
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[9px] text-gray-400 block leading-tight">
+                              Tarifa predictiva por IA
+                            </span>
+                            <span className="text-[8px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-bold uppercase tracking-wide inline-block mt-1">
+                              Garantizado
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Botón verde gigante abajo [ ACEPTAR SERVICIO ] con temporizador */}
+                        <div className="mt-3">
+                          <button
+                            onClick={() => acceptJob(incomingAlert)}
+                            className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-black rounded-xl py-3.5 text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-100 flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98] border border-emerald-400"
+                          >
+                            <span className="w-2 h-2 bg-white rounded-full animate-ping"></span>
+                            <span>🟩 ACEPTAR SERVICIO (0:0{incomingTimer}s)</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Specialty Picker as a neat bottom footer setting if waiting */}
+                    {!incomingAlert && (
+                      <div className="bg-gray-50 border border-gray-150 p-2 rounded-lg flex items-center justify-between text-xs text-gray-500">
+                        <span className="font-semibold">Filtrar por especialidad:</span>
+                        <select 
+                          value={techSpecialty} 
+                          onChange={(e) => setTechSpecialty(e.target.value as any)}
+                          className="bg-white border border-gray-200 text-gray-700 rounded px-1.5 py-0.5 font-bold cursor-pointer"
+                        >
+                          <option value="electricity">Electricidad ⚡</option>
+                          <option value="plumbing">Plomería 💧</option>
+                          <option value="locksmith">Cerrajería 🔑</option>
+                          <option value="gas">Fugas de Gas 🔥</option>
+                        </select>
                       </div>
-                    </div>
+                    )}
                   </div>
                 ) : (
                   /* Active Service In Progress Screens */
@@ -794,11 +887,11 @@ export default function App() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="flex-1 flex flex-col"
+                className="flex-1 flex flex-col justify-between"
               >
                 {/* Header block with search filter */}
                 <div className="p-4 bg-white border-b border-gray-100">
-                  <div className="flex items-center gap-3 mb-2.5">
+                  <div className="flex items-center gap-3">
                     <button 
                       id="btn-back-map"
                       onClick={() => setView('home')} 
@@ -808,59 +901,15 @@ export default function App() {
                     </button>
                     <div>
                       <h2 className="font-extrabold text-sm tracking-wide uppercase text-blue-600">
-                        ZONAS DE DEMANDA
+                        Panel de Monitoreo Global
                       </h2>
-                      <p className="text-[10px] text-gray-400">Distribución de alertas técnicas</p>
+                      <p className="text-[10px] text-gray-400">Análisis de cobertura IA en tiempo real</p>
                     </div>
-                  </div>
-
-                  {/* Filter chips */}
-                  <div className="flex gap-1 overflow-x-auto pb-0.5">
-                    <button
-                      onClick={() => { setMapFilter('all'); setSelectedMapPin(null); }}
-                      className={`px-2 py-0.5 rounded-full text-[8px] font-bold whitespace-nowrap border transition-all uppercase cursor-pointer ${
-                        mapFilter === 'all'
-                          ? 'bg-blue-50 border-blue-400 text-blue-700'
-                          : 'bg-gray-50 border-gray-150 text-gray-500'
-                      }`}
-                    >
-                      Todos
-                    </button>
-                    <button
-                      onClick={() => { setMapFilter('alerts'); setSelectedMapPin(null); }}
-                      className={`px-2 py-0.5 rounded-full text-[8px] font-bold whitespace-nowrap border transition-all uppercase cursor-pointer ${
-                        mapFilter === 'alerts'
-                          ? 'bg-red-50 border-red-300 text-red-700'
-                          : 'bg-gray-50 border-gray-150 text-gray-500'
-                      }`}
-                    >
-                      Alertas
-                    </button>
-                    <button
-                      onClick={() => { setMapFilter('techs'); setSelectedMapPin(null); }}
-                      className={`px-2 py-0.5 rounded-full text-[8px] font-bold whitespace-nowrap border transition-all uppercase cursor-pointer ${
-                        mapFilter === 'techs'
-                          ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                          : 'bg-gray-50 border-gray-150 text-gray-500'
-                      }`}
-                    >
-                      Técnicos
-                    </button>
-                    <button
-                      onClick={() => { setMapFilter('hot'); setSelectedMapPin(null); }}
-                      className={`px-2 py-0.5 rounded-full text-[8px] font-bold whitespace-nowrap border transition-all uppercase cursor-pointer ${
-                        mapFilter === 'hot'
-                          ? 'bg-amber-50 border-amber-300 text-amber-700'
-                          : 'bg-gray-50 border-gray-150 text-gray-500'
-                      }`}
-                    >
-                      🔥 Demanda
-                    </button>
                   </div>
                 </div>
 
                 {/* SVG/Styled City Map Visualization */}
-                <div className="flex-1 bg-slate-50 relative overflow-hidden flex items-center justify-center p-2 min-h-[300px] border-b border-gray-100">
+                <div className="flex-1 bg-slate-50 relative overflow-hidden flex items-center justify-center p-2 min-h-[200px] max-h-[250px] border-b border-gray-100">
                   {/* Grid Lines styling */}
                   <div className="absolute inset-0 bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)] bg-[size:20px_20px] opacity-40"></div>
 
@@ -872,132 +921,127 @@ export default function App() {
                     <path d="M 0 80 Q 30 75, 50 85 T 100 70" fill="none" stroke="#93c5fd" strokeWidth="4" />
                   </svg>
 
-                  {/* Render Map Items */}
-                  {mapMarkers
-                    .filter((m) => mapFilter === 'all' || m.type === mapFilter)
-                    .map((marker) => {
-                      const left = `${marker.lng}%`;
-                      const top = `${marker.lat}%`;
+                  {/* Render Custom High Fidelity Sectors Visuals */}
+                  {/* Sector Norte (Zona Roja) Pulsing Circle Overlay */}
+                  <div className="absolute top-[22%] left-[45%] -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
+                    <span className="absolute w-16 h-16 bg-red-500/25 rounded-full animate-ping [animation-duration:2.5s]"></span>
+                    <div className="relative w-8 h-8 rounded-full bg-red-600 border-2 border-white flex items-center justify-center shadow-lg">
+                      <Zap className="w-4 h-4 text-white animate-bounce" />
+                    </div>
+                    <span className="mt-1 bg-red-600 text-white font-black text-[7px] px-1.5 py-0.2 rounded shadow-sm border border-red-500 whitespace-nowrap">
+                      🚨 SECTOR NORTE (ZONA ROJA)
+                    </span>
+                  </div>
 
-                      return (
-                        <div
-                          key={marker.id}
-                          className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer z-20 group"
-                          style={{ left, top }}
-                          onClick={() => setSelectedMapPin(marker)}
-                        >
-                          {/* Alert Beacons */}
-                          {marker.type === 'alert' && (
-                            <div className="relative flex items-center justify-center">
-                              <span className="absolute w-7 h-7 bg-red-500/20 rounded-full animate-ping"></span>
-                              <div className="w-5 h-5 rounded-full bg-red-500 border-2 border-white flex items-center justify-center shadow-md">
-                                {marker.cat === 'plumbing' && <Droplet className="w-2.5 h-2.5 text-white" />}
-                                {marker.cat === 'electricity' && <Zap className="w-2.5 h-2.5 text-white" />}
-                                {marker.cat === 'locksmith' && <Key className="w-2.5 h-2.5 text-white" />}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Technician Beacons */}
-                          {marker.type === 'tech' && (
-                            <div className="relative flex items-center justify-center">
-                              <span className="absolute w-5 h-5 bg-emerald-500/10 rounded-full"></span>
-                              <div className="w-4 h-4 rounded-full bg-emerald-500 border border-white flex items-center justify-center shadow-xs">
-                                <User className="w-2 h-2 text-white" />
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Heatmap High Demand Areas */}
-                          {marker.type === 'hot' && (
-                            <div className="relative flex items-center justify-center">
-                              <div 
-                                className="bg-amber-500/15 rounded-full border border-amber-300 animate-pulse flex items-center justify-center"
-                                style={{ width: `${marker.radius * 1.5}px`, height: `${marker.radius * 1.5}px` }}
-                              >
-                                <span className="text-[7px] text-amber-700 font-bold bg-white/95 px-1 py-0.2 rounded border border-amber-200">
-                                  {marker.load}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                  {/* Sector Sur (Zona Verde) Circle Overlay */}
+                  <div className="absolute bottom-[25%] left-[55%] -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
+                    <span className="absolute w-12 h-12 bg-emerald-500/15 rounded-full animate-pulse [animation-duration:3s]"></span>
+                    <div className="relative w-7 h-7 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center shadow-md">
+                      <Droplet className="w-3.5 h-3.5 text-white" />
+                    </div>
+                    <span className="mt-1 bg-emerald-500 text-white font-black text-[7px] px-1.5 py-0.2 rounded shadow-sm border border-emerald-400 whitespace-nowrap">
+                      🟢 SECTOR SUR (ZONA VERDE)
+                    </span>
+                  </div>
 
                   {/* Compass/GPS status */}
                   <div className="absolute bottom-3 right-3 bg-white/90 border border-gray-150 px-2 py-1 rounded-lg text-[9px] font-bold text-gray-500 flex items-center gap-1 shadow-xs">
-                    <Navigation className="w-2.5 h-2.5 text-blue-500" />
-                    GPS ACTIVO
+                    <Navigation className="w-2.5 h-2.5 text-blue-500 animate-spin" />
+                    COBERTURA ACTIVA
                   </div>
                 </div>
 
-                {/* Info Card Drawer for selected map elements */}
-                <div className="p-4 bg-white">
-                  {selectedMapPin ? (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-gray-50 border border-gray-100 p-3 rounded-xl"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <span className={`text-[8px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider block w-fit mb-1 ${
-                            selectedMapPin.type === 'alert' ? 'bg-red-50 text-red-700 border border-red-200' :
-                            selectedMapPin.type === 'tech' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                            'bg-amber-50 text-amber-700 border border-amber-200'
-                          }`}>
-                            {selectedMapPin.type === 'alert' && 'EMERGENCIA'}
-                            {selectedMapPin.type === 'tech' && 'SOPORTE'}
-                            {selectedMapPin.type === 'hot' && 'DEMANDA'}
-                          </span>
-                          <h3 className="text-xs font-bold text-gray-800">
-                            {selectedMapPin.title || selectedMapPin.name}
-                          </h3>
-                        </div>
-                        <button 
-                          onClick={() => setSelectedMapPin(null)}
-                          className="text-[10px] text-gray-400 hover:text-gray-600 font-bold cursor-pointer"
-                        >
-                          Cerrar
-                        </button>
-                      </div>
+                {/* Info Card Panel with Zonas & Actions */}
+                <div className="p-4 bg-white flex flex-col space-y-3">
+                  
+                  {/* Title of Monitoring Zones */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
+                      BALANCE DE TRABAJO EN LA CIUDAD
+                    </span>
+                    <span className="bg-amber-100 border border-amber-200 text-amber-800 text-[8px] px-1.5 py-0.5 rounded font-black tracking-widest uppercase">
+                      ANALÍTICO
+                    </span>
+                  </div>
 
-                      <p className="text-[10px] text-gray-500 mt-1">
-                        {selectedMapPin.desc || (selectedMapPin.type === 'tech' ? `${selectedMapPin.specialty} • Estatus: ${selectedMapPin.status}` : `Foco de requerimientos activos.`)}
-                      </p>
-
-                      {selectedMapPin.type === 'alert' && (
-                        <button
-                          onClick={() => {
-                            setView('available');
-                            const dummyAlert: ActiveAlert = {
-                              id: selectedMapPin.id,
-                              title: selectedMapPin.title,
-                              description: selectedMapPin.desc,
-                              distance: '1.2 km',
-                              category: selectedMapPin.cat,
-                              payout: selectedMapPin.severity === 'critical' ? 700 : 400,
-                              timeAgo: 'Hace 1 min'
-                            };
-                            acceptJob(dummyAlert);
-                          }}
-                          className="w-full mt-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg py-2 text-[9px] font-bold tracking-wider uppercase transition-colors cursor-pointer text-center"
-                        >
-                          ACEPTAR ESTE AUXILIO DESDE AQUÍ
-                        </button>
-                      )}
-                    </motion.div>
-                  ) : (
-                    <div className="text-center py-2 text-gray-400">
-                      <p className="text-[10px]">Toca cualquier indicador del mapa para ver los detalles.</p>
-                      <div className="flex justify-center gap-4 mt-2 text-[9px] font-bold">
-                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500"></span> Alertas</span>
-                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Técnicos</span>
-                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Demanda</span>
-                      </div>
+                  {/* 🚨 ZONA ROJA (Alta Demanda / Cero Técnicos) */}
+                  <div className="bg-red-50/70 border border-red-200 rounded-xl p-3 flex items-start gap-2.5 relative overflow-hidden">
+                    <div className="w-7 h-7 bg-red-100 rounded-full flex items-center justify-center shrink-0 border border-red-200">
+                      <Zap className="w-4 h-4 text-red-600 animate-pulse" />
                     </div>
+                    <div>
+                      <span className="text-[8px] font-black text-red-600 block uppercase tracking-wider">
+                        🚨 ZONA ROJA (ALTA DEMANDA / CERO TÉCNICOS)
+                      </span>
+                      <p className="text-[11px] font-bold text-gray-800 mt-0.5 leading-snug">
+                        Sector Norte - 14 solicitudes de Electricista sin atender
+                      </p>
+                      <p className="text-[9px] text-gray-400 mt-0.5">
+                        Déficit crítico detectado. Los tiempos de espera superan los 45 min.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 🟢 ZONA VERDE (Oferta Cubierta) */}
+                  <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3 flex items-start gap-2.5 relative overflow-hidden">
+                    <div className="w-7 h-7 bg-emerald-100 rounded-full flex items-center justify-center shrink-0 border border-emerald-200">
+                      <Droplet className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <span className="text-[8px] font-black text-emerald-600 block uppercase tracking-wider">
+                        🟢 ZONA VERDE (OFERTA CUBIERTA)
+                      </span>
+                      <p className="text-[11px] font-bold text-gray-800 mt-0.5 leading-snug">
+                        Sector Sur - 8 Plomeros activos en ruta
+                      </p>
+                      <p className="text-[9px] text-gray-400 mt-0.5">
+                        Zona balanceada. Tiempo promedio de respuesta en 7.5 min.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Action Push Feedback Block */}
+                  {isNotifying && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-blue-50 border border-blue-200 p-2.5 rounded-xl flex items-center gap-2"
+                    >
+                      <div className="w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-[10px] font-bold text-blue-700 leading-none">
+                        DIFUNDIENDO ALERTA PUSH PRIORITARIA EN SECTOR NORTE...
+                      </span>
+                    </motion.div>
                   )}
+
+                  {hasNotified && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-emerald-500 border border-emerald-600 p-2.5 rounded-xl flex items-center gap-2 shadow-md"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-white shrink-0" />
+                      <div>
+                        <span className="text-[10px] font-black text-white block leading-none">
+                          ¡ALERTA PUSH ENVIADA CON ÉXITO!
+                        </span>
+                        <span className="text-[8px] text-white/90 block mt-0.5">
+                          12 técnicos cercanos en tránsito recibieron aviso prioritario para equilibrar.
+                        </span>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Botón de acción rápida: [ 📣 NOTIFICAR A TÉCNICOS CERCANOS ] */}
+                  <div className="pt-1">
+                    <button
+                      onClick={handleNotifyTechs}
+                      disabled={isNotifying}
+                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white font-extrabold rounded-xl py-3.5 text-xs uppercase tracking-wider transition-all shadow-md shadow-blue-100 flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98] border border-blue-500"
+                    >
+                      <span>📣 NOTIFICAR A TÉCNICOS CERCANOS</span>
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             )}
