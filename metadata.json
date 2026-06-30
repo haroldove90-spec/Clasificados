@@ -1,0 +1,6 @@
+{
+  "name": "FixMatch",
+  "description": "Sistema móvil de asistencia técnica urgente y oferta de servicios.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
