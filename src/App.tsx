@@ -303,22 +303,9 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#121212] flex flex-col items-center justify-center p-4 font-sans select-none antialiased relative">
-      {/* Container simulating a professional, polished mobile device frame */}
-      <div className="relative w-full max-w-[360px] h-[720px] bg-white rounded-[48px] border-[10px] border-[#262626] shadow-[0_0_80px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col text-gray-800">
-        
-        {/* Mobile Status Bar */}
-        <div className="h-8 pt-2 px-8 flex justify-between items-center text-xs font-bold z-40 bg-white border-b border-gray-50">
-          <span className="text-gray-800">{currentTime}</span>
-          <div className="flex gap-1.5 items-center">
-            <div className="w-4 h-2 bg-gray-300 rounded-full"></div>
-            <div className="w-4 h-2 bg-gray-300 rounded-full"></div>
-            <div className="w-4 h-2 bg-gray-800 rounded-full"></div>
-          </div>
-        </div>
-
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-y-auto relative bg-white pb-6">
+    <div className="min-h-screen bg-white flex flex-col text-gray-800 font-sans select-none antialiased relative">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-y-auto relative bg-white pb-6">
           <AnimatePresence mode="wait">
             
             {/* 1. HOME SCREEN */}
@@ -1457,18 +1444,6 @@ export default function App() {
 
           </AnimatePresence>
         </div>
-
-        {/* Apple Home Indicator Bar mockup */}
-        <div className="w-full h-10 flex items-center justify-center pb-2 bg-white">
-          <div className="w-32 h-1 bg-gray-200 rounded-full"></div>
-        </div>
-
-      </div>
-
-      {/* Decorative environment background tag from design */}
-      <div className="absolute bottom-8 right-8 text-white/20 font-mono text-xs pointer-events-none">
-        FIXMATCH_SYS_INIT_v1.0.4
-      </div>
     </div>
   );
 }
