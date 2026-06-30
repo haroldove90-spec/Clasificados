@@ -303,23 +303,24 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#121212] flex flex-col items-center justify-center p-4 font-sans select-none antialiased relative">
-      {/* Container simulating a professional, polished mobile device frame */}
-      <div className="relative w-full max-w-[360px] h-[720px] bg-white rounded-[48px] border-[10px] border-[#262626] shadow-[0_0_80px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col text-gray-800">
-        
-        {/* Mobile Status Bar */}
-        <div className="h-8 pt-2 px-8 flex justify-between items-center text-xs font-bold z-40 bg-white border-b border-gray-50">
-          <span className="text-gray-800">{currentTime}</span>
-          <div className="flex gap-1.5 items-center">
-            <div className="w-4 h-2 bg-gray-300 rounded-full"></div>
-            <div className="w-4 h-2 bg-gray-300 rounded-full"></div>
-            <div className="w-4 h-2 bg-gray-800 rounded-full"></div>
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans select-none antialiased relative text-gray-800">
+      {/* Top Header Panel - Always Visible */}
+      <header className="bg-white border-b border-gray-200 py-4 px-6 md:px-12 flex justify-between items-center z-40 sticky top-0 shadow-xs">
+        <div className="text-xl md:text-2xl font-black tracking-tight text-gray-900 flex items-center gap-2.5">
+          <div className="w-7 h-7 bg-black rounded-lg flex items-center justify-center shrink-0">
+            <div className="w-3.5 h-3.5 bg-white rounded-full"></div>
           </div>
+          <span>🌐 FIXMATCH | Plataforma de Servicios</span>
         </div>
+        <div className="flex items-center gap-4 text-xs font-bold text-gray-500 font-mono">
+          <span>🕒 {currentTime}</span>
+          <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded">PANTALLA COMPLETA</span>
+        </div>
+      </header>
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-y-auto relative bg-white pb-6">
-          <AnimatePresence mode="wait">
+      {/* Main Content Area in Full Screen */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:px-12 flex flex-col">
+        <AnimatePresence mode="wait">
             
             {/* 1. HOME SCREEN */}
             {view === 'home' && (
@@ -329,71 +330,104 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
                 transition={{ duration: 0.25 }}
-                className="flex-1 flex flex-col justify-between px-6 py-4"
+                className="flex-1 flex flex-col justify-center max-w-5xl mx-auto w-full py-6 font-sans"
               >
-                {/* Brand Header */}
-                <header className="w-full pt-4 pb-4 flex flex-col items-center border-b border-gray-100">
-                  <div className="text-2xl font-black tracking-tighter text-black flex items-center gap-2">
-                    <div className="w-6 h-6 bg-black rounded flex items-center justify-center">
-                      <div className="w-2.5 h-2.5 bg-white rounded-full"></div>
-                    </div>
-                    FIXMATCH
-                  </div>
-                  <p className="mt-1 text-[10px] uppercase tracking-widest text-gray-400 font-bold">
-                    RED TÉCNICA DE EMERGENCIA
-                  </p>
-                </header>
-
                 {/* Central Question */}
-                <div className="my-auto text-center py-6">
-                  <h1 id="home-headline" className="text-xl font-bold text-gray-800 tracking-tight">
-                    ¿Qué necesitas solucionar hoy?
+                <div className="text-center mb-10">
+                  <h1 id="home-headline" className="text-2xl md:text-3xl font-black text-gray-900 tracking-widest uppercase">
+                    ¿QUÉ OPERACIÓN DESEAS EJECUTAR HOY?
                   </h1>
-                  <p className="text-xs text-gray-400 mt-1 max-w-[250px] mx-auto">
-                    Selecciona una opción para continuar
+                  <p className="text-xs md:text-sm text-gray-400 mt-2 tracking-wider font-mono">
+                    SELECCIONA UN MÓDULO PARA INICIAR EL FLUJO DE SIMULACIÓN EN TIEMPO REAL
                   </p>
                 </div>
 
-                {/* Buttons Stack */}
-                <div className="space-y-4 pt-2">
-                  {/* BUTTON 1: SOLICITAR AUXILIO URGENTE (RED) */}
-                  <button
-                    id="btn-urgente"
-                    onClick={() => setView('emergency')}
-                    className="w-full bg-[#EF4444] hover:bg-[#DC2626] text-white py-5 px-4 rounded-2xl shadow-lg shadow-red-100 flex flex-col items-center transition-all group cursor-pointer active:scale-[0.98]"
-                  >
-                    <span className="text-xs font-bold uppercase tracking-widest opacity-80">EMERGENCIA</span>
-                    <span className="text-lg font-extrabold tracking-wide">SOLICITAR AUXILIO URGENTE</span>
-                    <span className="text-[10px] mt-1 opacity-70 italic">Señal de alerta a 5km a la redonda</span>
-                  </button>
+                <div className="space-y-6">
+                  <hr className="border-t-2 border-gray-300 opacity-60" />
 
-                  {/* BUTTON 2: ACTIVAR MODO DISPONIBLE (GREEN) */}
-                  <button
-                    id="btn-disponible"
-                    onClick={() => setView('available')}
-                    className="w-full bg-[#10B981] hover:bg-[#059669] text-white py-5 px-4 rounded-2xl shadow-lg shadow-green-100 flex flex-col items-center transition-all cursor-pointer active:scale-[0.98]"
-                  >
-                    <span className="text-xs font-bold uppercase tracking-widest opacity-80">SOY TÉCNICO</span>
-                    <span className="text-lg font-extrabold tracking-wide">ACTIVAR MODO DISPONIBLE</span>
-                    <span className="text-[10px] mt-1 opacity-70 italic">Comienza a recibir solicitudes de trabajo</span>
-                  </button>
+                  {/* BUTTON 1: BOTÓN DE EMERGENCIA */}
+                  <div className="group">
+                    <button
+                      id="btn-urgente"
+                      onClick={() => setView('emergency')}
+                      className="w-full bg-[#EF4444] hover:bg-[#DC2626] text-white p-6 md:p-8 rounded-2xl shadow-xl hover:shadow-red-200 transition-all text-left flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer active:scale-[0.99] group-hover:-translate-y-0.5 duration-200"
+                    >
+                      <div className="flex-1">
+                        <span className="inline-block bg-white text-[#EF4444] text-xs font-black px-3 py-1 rounded-md mb-3 tracking-wider uppercase font-mono">
+                          🟥 BOTÓN DE EMERGENCIA
+                        </span>
+                        <h2 className="text-lg md:text-xl font-extrabold tracking-tight">
+                          Lanzar alerta geolocalizada a 5km a la redonda para atención inmediata
+                        </h2>
+                        <p className="text-xs md:text-sm mt-1.5 opacity-90 font-medium">
+                          Flujo de Cliente: Solicita plomería, electricidad, cerrajería o gas en tiempo real con geolocalización, chat integrado y validación de seguridad por OTP.
+                        </p>
+                      </div>
+                      <span className="text-2xl hidden md:block select-none opacity-50 group-hover:opacity-100 transition-opacity">
+                        👉
+                      </span>
+                    </button>
+                  </div>
 
-                  {/* BUTTON 3: VER MAPA DE LA CIUDAD (BLUE) */}
-                  <button
-                    id="btn-mapa"
-                    onClick={() => setView('map')}
-                    className="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white py-5 px-4 rounded-2xl shadow-lg shadow-blue-100 flex flex-col items-center transition-all cursor-pointer active:scale-[0.98]"
-                  >
-                    <span className="text-xs font-bold uppercase tracking-widest opacity-80">EXPLORAR</span>
-                    <span className="text-lg font-extrabold tracking-wide">VER MAPA DE LA CIUDAD</span>
-                    <span className="text-[10px] mt-1 opacity-70 italic">Zonas con alta demanda de servicios</span>
-                  </button>
+                  <hr className="border-t-2 border-gray-300 opacity-60" />
+
+                  {/* BUTTON 2: ACTIVAR MODO DISPONIBLE AHORA */}
+                  <div className="group">
+                    <button
+                      id="btn-disponible"
+                      onClick={() => setView('available')}
+                      className="w-full bg-[#10B981] hover:bg-[#059669] text-white p-6 md:p-8 rounded-2xl shadow-xl hover:shadow-emerald-200 transition-all text-left flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer active:scale-[0.99] group-hover:-translate-y-0.5 duration-200"
+                    >
+                      <div className="flex-1">
+                        <span className="inline-block bg-white text-[#10B981] text-xs font-black px-3 py-1 rounded-md mb-3 tracking-wider uppercase font-mono">
+                          🟩 ACTIVAR MODO DISPONIBLE AHORA
+                        </span>
+                        <h2 className="text-lg md:text-xl font-extrabold tracking-tight">
+                          Cambiar estado a en línea para recibir solicitudes de trabajo al instante
+                        </h2>
+                        <p className="text-xs md:text-sm mt-1.5 opacity-90 font-medium">
+                          Flujo de Técnico / Proveedor: Recibe alertas entrantes geolocalizadas, acepta servicios de emergencia, navega con mapa en tiempo real, ingresa el código OTP del cliente y finaliza el servicio.
+                        </p>
+                      </div>
+                      <span className="text-2xl hidden md:block select-none opacity-50 group-hover:opacity-100 transition-opacity">
+                        👉
+                      </span>
+                    </button>
+                  </div>
+
+                  <hr className="border-t-2 border-gray-300 opacity-60" />
+
+                  {/* BUTTON 3: VER MAPA DE CALOR DE DEMANDA */}
+                  <div className="group">
+                    <button
+                      id="btn-mapa"
+                      onClick={() => setView('map')}
+                      className="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white p-6 md:p-8 rounded-2xl shadow-xl hover:shadow-blue-200 transition-all text-left flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer active:scale-[0.99] group-hover:-translate-y-0.5 duration-200"
+                    >
+                      <div className="flex-1">
+                        <span className="inline-block bg-white text-[#3B82F6] text-xs font-black px-3 py-1 rounded-md mb-3 tracking-wider uppercase font-mono">
+                          🟦 VER MAPA DE CALOR DE DEMANDA
+                        </span>
+                        <h2 className="text-lg md:text-xl font-extrabold tracking-tight">
+                          Monitorear zonas críticas de la ciudad con solicitudes insatisfechas
+                        </h2>
+                        <p className="text-xs md:text-sm mt-1.5 opacity-90 font-medium">
+                          Flujo de Administrador: Monitorea el balance de cobertura en tiempo real, localiza déficits de técnicos (Zonas Rojas) y emite notificaciones PUSH de emergencia para movilizar personal.
+                        </p>
+                      </div>
+                      <span className="text-2xl hidden md:block select-none opacity-50 group-hover:opacity-100 transition-opacity">
+                        👉
+                      </span>
+                    </button>
+                  </div>
+
+                  <hr className="border-t-2 border-gray-300 opacity-60" />
                 </div>
 
                 {/* Bottom Status Info */}
-                <div className="mt-auto pt-4 bg-gray-50 border border-gray-100 rounded-xl p-3 text-center">
-                  <p className="text-[11px] text-gray-500 font-medium">
-                    ESTADO: <span className="text-blue-600 font-bold">Esperando interacción...</span>
+                <div className="mt-8 bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center font-mono">
+                  <p className="text-xs text-gray-600 font-bold">
+                    ESTADO DE SIMULACIÓN: <span className="text-blue-600 animate-pulse">ESPERANDO SELECCIÓN...</span>
                   </p>
                 </div>
               </motion.div>
@@ -1456,19 +1490,13 @@ export default function App() {
             )}
 
           </AnimatePresence>
-        </div>
+        </main>
 
-        {/* Apple Home Indicator Bar mockup */}
-        <div className="w-full h-10 flex items-center justify-center pb-2 bg-white">
-          <div className="w-32 h-1 bg-gray-200 rounded-full"></div>
-        </div>
-
+        {/* Dynamic footer with real-time metadata */}
+        <footer className="w-full bg-white border-t border-gray-200 py-4 px-6 md:px-12 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500 font-mono gap-2 mt-auto z-40">
+          <span>🛡️ FIXMATCH v2.0.0 • CONEXIÓN TÉCNICA ACTIVA</span>
+          <span className="text-[10px] text-gray-400">Desarrollado para Google AI Studio • softwareai569@gmail.com</span>
+        </footer>
       </div>
-
-      {/* Decorative environment background tag from design */}
-      <div className="absolute bottom-8 right-8 text-white/20 font-mono text-xs pointer-events-none">
-        FIXMATCH_SYS_INIT_v1.0.4
-      </div>
-    </div>
-  );
-}
+    );
+  }
